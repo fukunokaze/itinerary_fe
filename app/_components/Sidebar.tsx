@@ -8,12 +8,7 @@ import {
   Plane,
 } from 'lucide-react';
 import { NavLink } from './NavLink';
-
-const mockTrips = [
-  { id: '1', title: 'Japan Adventure 2024' },
-  { id: '2', title: 'Italy Summer Tour' },
-  { id: '3', title: 'London Weekend' },
-];
+import { getTrips } from '@/lib/api/trips';
 
 const navLinks = [
   { label: 'Dashboard', icon: LayoutGrid, href: '/' },
@@ -23,7 +18,14 @@ const navLinks = [
   { label: 'Settings', icon: Settings, href: '/settings' },
 ];
 
-export default function Sidebar() {
+export default async function Sidebar() {
+  let trips: { id: string; title: string }[] = [];
+  try {
+    trips = await getTrips();
+  } catch (error) {
+    console.error('Failed to load trips for sidebar:', error);
+  }
+
   return (
     <div className="w-64 h-screen bg-gray-900 text-white flex flex-col overflow-y-auto fixed left-0 top-0">
       {/* Logo Section */}
@@ -59,15 +61,19 @@ export default function Sidebar() {
           Trips
         </h3>
         <div className="space-y-2">
-          {mockTrips.map((trip) => (
-            <Link
-              key={trip.id}
-              href={`/trips/${trip.id}`}
-              className="block px-3 py-2 rounded text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition truncate"
-            >
-              {trip.title}
-            </Link>
-          ))}
+          {trips.length === 0 ? (
+            <p className="px-3 py-2 text-sm text-gray-500">No trips yet</p>
+          ) : (
+            trips.map((trip) => (
+              <Link
+                key={trip.id}
+                href={`/trips/${trip.id}`}
+                className="block px-3 py-2 rounded text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition truncate"
+              >
+                {trip.title}
+              </Link>
+            ))
+          )}
         </div>
       </div>
     </div>

@@ -29,12 +29,16 @@ export function FlightCard({ flight }: FlightCardProps) {
       >
         <div className="flex-1">
           <div className="font-semibold text-gray-900">
-            Flight {flight.flightNumber} ({flight.departureAirport}→{flight.arrivalAirport})
+            Flight {flight.flightNumber}
+            {flight.route ? ` (${flight.route})` : ''}
           </div>
           <div className="text-xs text-gray-600 mt-1">
-            {flight.airline} • {departDate}
+            {flight.airline && `${flight.airline} • `}
+            {departDate}
           </div>
-          <div className="text-sm text-gray-700 mt-1">Seats: {flight.seatCount}</div>
+          {flight.seat && (
+            <div className="text-sm text-gray-700 mt-1">Seat: {flight.seat}</div>
+          )}
         </div>
         <ChevronDown
           className={`w-5 h-5 text-gray-600 flex-shrink-0 transition ${
@@ -46,18 +50,18 @@ export function FlightCard({ flight }: FlightCardProps) {
       {isOpen && (
         <div className="px-3 py-3 bg-white border-t border-gray-200 text-xs text-gray-600 space-y-1">
           <div>
-            <strong>Departure:</strong> {departTime} from {flight.departureAirport}
+            <strong>Departure:</strong> {departTime}
           </div>
           <div>
-            <strong>Arrival:</strong> {new Date(flight.arrivalTime).toLocaleTimeString('en-US', {
+            <strong>Arrival:</strong>{' '}
+            {new Date(flight.arrivalTime).toLocaleTimeString('en-US', {
               hour: '2-digit',
               minute: '2-digit',
-            })}{' '}
-            at {flight.arrivalAirport}
+            })}
           </div>
-          {flight.confirmationNumber && (
+          {flight.confirmationCode && (
             <div>
-              <strong>Confirmation:</strong> {flight.confirmationNumber}
+              <strong>Confirmation:</strong> {flight.confirmationCode}
             </div>
           )}
         </div>

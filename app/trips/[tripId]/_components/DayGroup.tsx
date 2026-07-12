@@ -7,14 +7,17 @@ interface DayGroupProps {
   events: TripEvent[];
 }
 
-export async function DayGroup({ dayNumber, date, events }: DayGroupProps) {
+export function DayGroup({ dayNumber, date, events }: DayGroupProps) {
   const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
   const dayDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
-  // Sort events by time
-  const sortedEvents = [...events].sort(
-    (a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
-  );
+  // Sort events by time (events without a start time sort last)
+  const sortedEvents = [...events].sort((a, b) => {
+    if (!a.startTime && !b.startTime) return 0;
+    if (!a.startTime) return 1;
+    if (!b.startTime) return -1;
+    return a.startTime.localeCompare(b.startTime);
+  });
 
   return (
     <div className="pb-6">

@@ -1,12 +1,26 @@
 import {
   Trip,
-  TripResponse,
-  EventsResponse,
-  LogisticsResponse,
-  TravelersResponse,
+  TripEvent,
+  Flight,
+  Lodging,
+  CreateTripInput,
+  UpdateTripInput,
+  CreateTripEventInput,
+  CreateFlightInput,
+  CreateLodgingInput,
 } from '@/lib/types/trip';
 
-const API_URL = process.env.API_URL || 'http://localhost:5000/api';
+const API_URL = process.env.API_URL || 'http://localhost:5238/api';
+
+export class ApiError extends Error {
+  constructor(
+    public status: number,
+    message: string
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
 
 async function fetchFromAPI<T>(
   endpoint: string,
@@ -22,77 +36,121 @@ async function fetchFromAPI<T>(
   });
 
   if (!response.ok) {
-    throw new Error(
+    throw new ApiError(
+      response.status,
       `API request failed: ${response.status} ${response.statusText}`
     );
+  }
+
+  if (response.status === 204) {
+    return undefined as T;
   }
 
   return response.json();
 }
 
+// Trips
+
+export async function getTrips(): Promise<Trip[]> {
+  return fetchFromAPI<Trip[]>('/Trips');
+}
+
 export async function getTrip(tripId: string): Promise<Trip> {
-  try {
-    const data = await fetchFromAPI<TripResponse>(
-      `/trips/${tripId}`
-    );
-    // Transform API response to Trip type as needed
-    return data as unknown as Trip;
-  } catch (error) {
-    console.error(`Failed to fetch trip ${tripId}:`, error);
-    throw error;
-  }
+  return fetchFromAPI<Trip>(`/Trips/${tripId}`);
 }
 
-export async function getTripEvents(tripId: string) {
-  try {
-    const data = await fetchFromAPI<EventsResponse>(
-      `/trips/${tripId}/events`
-    );
-    return data.events;
-  } catch (error) {
-    console.error(`Failed to fetch events for trip ${tripId}:`, error);
-    throw error;
-  }
+export async function createTrip(input: CreateTripInput): Promise<Trip> {
+  return fetchFromAPI<Trip>('/Trips', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
 }
 
-export async function getTripLogistics(tripId: string) {
-  try {
-    const data = await fetchFromAPI<LogisticsResponse>(
-      `/trips/${tripId}/logistics`
-    );
-    return data;
-  } catch (error) {
-    console.error(`Failed to fetch logistics for trip ${tripId}:`, error);
-    throw error;
-  }
+export async function updateTrip(
+  tripId: string,
+  input: UpdateTripInput
+): Promise<Trip> {
+  return fetchFromAPI<Trip>(`/Trips/${tripId}`, {
+    method: 'PUT',
+    body: JSON.stringify(input),
+  });
 }
 
-export async function getTripTravelers(tripId: string) {
-  try {
-    const data = await fetchFromAPI<TravelersResponse>(
-      `/trips/${tripId}/travelers`
-    );
-    return data.travelers;
-  } catch (error) {
-    console.error(`Failed to fetch travelers for trip ${tripId}:`, error);
-    throw error;
-  }
+export async function deleteTrip(tripId: string): Promise<void> {
+  await fetchFromAPI<void>(`/Trips/${tripId}`, { method: 'DELETE' });
+}
+
+// Trip Events
+
+export async function getTripEvents(tripId: string): Promise<TripEvent[]> {
+  return fetchFromAPI<TripEvent[]>(`/trips/${tripId}/events`);
 }
 
 export async function createEvent(
   tripId: string,
-  eventData: Record<string, unknown>
-) {
-  try {
-    return await fetchFromAPI(
-      `/trips/${tripId}/events`,
-      {
-        method: 'POST',
-        body: JSON.stringify(eventData),
-      }
-    );
-  } catch (error) {
-    console.error(`Failed to create event for trip ${tripId}:`, error);
-    throw error;
-  }
+  input: CreateTripEventInput
+): Promise<TripEvent> {
+  return fetchFromAPI<TripEvent>(`/trips/${tripId}/events`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function deleteEvent(
+  tripId: string,
+  eventId: string
+): Promise<void> {
+  await fetchFromAPI<void>(`/trips/${tripId}/events/${eventId}`, {
+    method: 'DELETE',
+  });
+}
+
+// Flights
+
+export async function getTripFlights(tripId: string): Promise<Flight[]> {
+  return fetchFromAPI<Flight[]>(`/trips/${tripId}/flights`);
+}
+
+export async function createFlight(
+  tripId: string,
+  input: CreateFlightInput
+): Promise<Flight> {
+  return fetchFromAPI<Flight>(`/trips/${tripId}/flights`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function deleteFlight(
+  tripId: string,
+  flightId: string
+): Promise<void> {
+  await fetchFromAPI<void>(`/trips/${tripId}/flights/${flightId}`, {
+    method: 'DELETE',
+  });
+}
+
+// Lodgings
+
+export async function getTripLodgings(tripId: string): Promise<Lodging[]> {
+  return fetchFromAPI<Lodging[]>(`/trips/${tripId}/lodgings`);
+}
+
+export async function createLodging(
+  tripId: string,
+  input: CreateLodgingInput
+): Promise<Lodging> {
+  return fetchFromAPI<Lodging>(`/trips/${tripId}/lodgings`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function deleteLodging(
+  tripId: string,
+  lodgingId: string
+): Promise<void> {
+  await fetchFromAPI<void>(`/trips/${tripId}/lodgings/${lodgingId}`, {
+    method: 'DELETE',
+  });
 }

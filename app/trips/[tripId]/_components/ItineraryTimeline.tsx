@@ -1,22 +1,11 @@
-import { getTripEvents } from '@/lib/api/trips';
-import { mockEvents } from '@/lib/fixtures/trip';
 import { TripEvent } from '@/lib/types/trip';
 import { DayGroup } from './DayGroup';
 
 interface ItineraryTimelineProps {
-  tripId: string;
+  events: TripEvent[];
 }
 
-export async function ItineraryTimeline({ tripId }: ItineraryTimelineProps) {
-  let events: TripEvent[] = [];
-
-  try {
-    events = await getTripEvents(tripId);
-  } catch (error) {
-    console.log('Using fixture events:', error);
-    events = mockEvents;
-  }
-
+export function ItineraryTimeline({ events }: ItineraryTimelineProps) {
   if (events.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 bg-white rounded-lg border border-gray-200">
@@ -33,11 +22,10 @@ export async function ItineraryTimeline({ tripId }: ItineraryTimelineProps) {
 
   // Group events by date
   const eventsByDate = new Map<string, TripEvent[]>();
-  
+
   events.forEach((event) => {
-    const eventDate = new Date(event.startTime);
-    const dateKey = eventDate.toISOString().split('T')[0];
-    
+    const dateKey = event.date.split('T')[0];
+
     if (!eventsByDate.has(dateKey)) {
       eventsByDate.set(dateKey, []);
     }
@@ -50,7 +38,7 @@ export async function ItineraryTimeline({ tripId }: ItineraryTimelineProps) {
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold text-gray-900">Itinerary</h2>
-      
+
       <div className="space-y-0">
         {sortedDates.map((dateKey, index) => {
           const dayEvents = eventsByDate.get(dateKey)!;

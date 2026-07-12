@@ -2,16 +2,22 @@
 
 import { useRef, useEffect, useState, useTransition } from 'react';
 import { createEventAction } from '../actions';
-import { Traveler, Flight, Lodging } from '@/lib/types/trip';
-import { mockTravelers, mockFlights, mockLodging } from '@/lib/fixtures/trip';
+import { Trip, EventType } from '@/lib/types/trip';
 import { X, ChevronDown } from 'lucide-react';
 
 interface AddEventModalProps {
   tripId: string;
+  trip: Trip;
   onClose: () => void;
 }
 
-export function AddEventModal({ tripId, onClose }: AddEventModalProps) {
+const eventTypeOptions: { value: EventType; label: string }[] = [
+  { value: 'activity', label: 'Activity' },
+  { value: 'flight', label: 'Flight' },
+  { value: 'lodging', label: 'Lodging' },
+];
+
+export function AddEventModal({ tripId, trip, onClose }: AddEventModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -20,20 +26,17 @@ export function AddEventModal({ tripId, onClose }: AddEventModalProps) {
 
   // Form state
   const [formData, setFormData] = useState({
+    type: 'activity' as EventType,
     title: '',
     date: new Date().toISOString().split('T')[0],
     startTime: '10:00',
     endTime: '',
     location: '',
     notes: '',
-    confirmationNumber: '',
-    assignedTravelers: ['1', '2'] as string[],
-    relatedItems: [] as string[],
+    bookingCode: '',
+    travelerIds: [] as string[],
+    relatedItemIds: [] as string[],
   });
-
-  // Get day number
-  const eventDate = new Date(formData.date);
-  const dayNumber = eventDate.getDay() + 1;
 
   useEffect(() => {
     dialogRef.current?.showModal();
@@ -61,10 +64,7 @@ export function AddEventModal({ tripId, onClose }: AddEventModalProps) {
     }
   };
 
-  const handleInputChange = (
-    field: string,
-    value: string | string[]
-  ) => {
+  const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
@@ -79,18 +79,18 @@ export function AddEventModal({ tripId, onClose }: AddEventModalProps) {
   const handleTravelerToggle = (travelerId: string) => {
     setFormData((prev) => ({
       ...prev,
-      assignedTravelers: prev.assignedTravelers.includes(travelerId)
-        ? prev.assignedTravelers.filter((id) => id !== travelerId)
-        : [...prev.assignedTravelers, travelerId],
+      travelerIds: prev.travelerIds.includes(travelerId)
+        ? prev.travelerIds.filter((id) => id !== travelerId)
+        : [...prev.travelerIds, travelerId],
     }));
   };
 
   const handleRelatedToggle = (itemId: string) => {
     setFormData((prev) => ({
       ...prev,
-      relatedItems: prev.relatedItems.includes(itemId)
-        ? prev.relatedItems.filter((id) => id !== itemId)
-        : [...prev.relatedItems, itemId],
+      relatedItemIds: prev.relatedItemIds.includes(itemId)
+        ? prev.relatedItemIds.filter((id) => id !== itemId)
+        : [...prev.relatedItemIds, itemId],
     }));
   };
 
@@ -138,7 +138,7 @@ export function AddEventModal({ tripId, onClose }: AddEventModalProps) {
         <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
           {/* Header */}
           <div className="bg-gray-900 text-white px-6 py-4 flex items-center justify-between sticky top-0">
-            <h2 className="text-xl font-bold">Add New Event (Japan Adventure)</h2>
+            <h2 className="text-xl font-bold">Add New Event ({trip.title})</h2>
             <button
               onClick={handleClose}
               className="text-gray-300 hover:text-white transition p-1"
@@ -155,6 +155,24 @@ export function AddEventModal({ tripId, onClose }: AddEventModalProps) {
                 {error}
               </div>
             )}
+
+            {/* Event Type */}
+            <div>
+              <label className="block text-sm font-medium text-gray-900 mb-1">
+                Event Type *
+              </label>
+              <select
+                value={formData.type}
+                onChange={(e) => handleInputChange('type', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {eventTypeOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
 
             {/* Event Title */}
             <div>
@@ -186,22 +204,17 @@ export function AddEventModal({ tripId, onClose }: AddEventModalProps) {
                 <label className="block text-sm font-medium text-gray-900 mb-1">
                   Date *
                 </label>
-                <div className="flex gap-2">
-                  <input
-                    type="date"
-                    value={formData.date}
-                    onChange={(e) => handleInputChange('date', e.target.value)}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  <div className="px-3 py-2 bg-gray-100 rounded-lg text-sm font-medium text-gray-700 flex items-center">
-                    Day {dayNumber}
-                  </div>
-                </div>
+                <input
+                  type="date"
+                  value={formData.date}
+                  onChange={(e) => handleInputChange('date', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-900 mb-1">
-                  Start Time *
+                  Start Time
                 </label>
                 <input
                   type="time"
@@ -252,118 +265,107 @@ export function AddEventModal({ tripId, onClose }: AddEventModalProps) {
               />
             </div>
 
-            {/* Confirmation/Booking # */}
+            {/* Booking Code */}
             <div>
               <label className="block text-sm font-medium text-gray-900 mb-1">
                 Confirmation/Booking #
               </label>
               <input
                 type="text"
-                value={formData.confirmationNumber}
-                onChange={(e) =>
-                  handleInputChange('confirmationNumber', e.target.value)
-                }
+                value={formData.bookingCode}
+                onChange={(e) => handleInputChange('bookingCode', e.target.value)}
                 placeholder="e.g., CONF12345"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
             {/* Assigned Travelers */}
-            <div>
-              <label className="block text-sm font-medium text-gray-900 mb-2">
-                Assigned Travelers
-              </label>
-              <div className="space-y-2">
-                {mockTravelers.map((traveler) => (
-                  <label key={traveler.id} className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={formData.assignedTravelers.includes(
-                        traveler.id
-                      )}
-                      onChange={() => handleTravelerToggle(traveler.id)}
-                      className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <div className="w-6 h-6 bg-gray-300 rounded-full flex items-center justify-center text-xs font-bold">
-                      {traveler.name.charAt(0)}
-                    </div>
-                    <span className="text-sm text-gray-700">{traveler.name}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {/* Related Logistical Items */}
-            <div>
-              <button
-                type="button"
-                onClick={() => setExpandRelated(!expandRelated)}
-                className="flex items-center gap-2 text-sm font-medium text-gray-900 mb-2"
-              >
-                Related Logistical Items
-                <ChevronDown
-                  className={`w-4 h-4 transition ${
-                    expandRelated ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
-
-              {expandRelated && (
-                <div className="space-y-2 ml-4 p-3 bg-gray-50 rounded-lg">
-                  <div className="font-medium text-xs text-gray-600 uppercase">
-                    Flights
-                  </div>
-                  {mockFlights.map((flight) => (
-                    <label
-                      key={flight.id}
-                      className="flex items-center gap-2"
-                    >
+            {trip.travelers.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-gray-900 mb-2">
+                  Assigned Travelers
+                </label>
+                <div className="space-y-2">
+                  {trip.travelers.map((traveler) => (
+                    <label key={traveler.id} className="flex items-center gap-2">
                       <input
                         type="checkbox"
-                        checked={formData.relatedItems.includes(flight.id)}
-                        onChange={() => handleRelatedToggle(flight.id)}
-                        className="w-4 h-4 rounded border-gray-300 text-blue-600"
+                        checked={formData.travelerIds.includes(traveler.id)}
+                        onChange={() => handleTravelerToggle(traveler.id)}
+                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
-                      <span className="text-xs text-gray-700">
-                        {flight.flightNumber} ({flight.departureAirport}→
-                        {flight.arrivalAirport})
-                      </span>
-                    </label>
-                  ))}
-
-                  <div className="font-medium text-xs text-gray-600 uppercase mt-3">
-                    Lodging
-                  </div>
-                  {mockLodging.map((lodge) => (
-                    <label
-                      key={lodge.id}
-                      className="flex items-center gap-2"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={formData.relatedItems.includes(lodge.id)}
-                        onChange={() => handleRelatedToggle(lodge.id)}
-                        className="w-4 h-4 rounded border-gray-300 text-blue-600"
-                      />
-                      <span className="text-xs text-gray-700">{lodge.name}</span>
+                      <div className="w-6 h-6 bg-gray-300 rounded-full flex items-center justify-center text-xs font-bold">
+                        {traveler.name.charAt(0)}
+                      </div>
+                      <span className="text-sm text-gray-700">{traveler.name}</span>
                     </label>
                   ))}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
-            {/* Upload Image/Receipt */}
-            <div>
-              <label className="block text-sm font-medium text-gray-900 mb-2">
-                Upload Image/Receipt
-              </label>
-              <button
-                type="button"
-                className="px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg text-sm text-gray-600 hover:border-gray-400 transition"
-              >
-                📎 Upload Image/Receipt
-              </button>
-            </div>
+            {/* Related Logistical Items */}
+            {(trip.flights.length > 0 || trip.lodgings.length > 0) && (
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setExpandRelated(!expandRelated)}
+                  className="flex items-center gap-2 text-sm font-medium text-gray-900 mb-2"
+                >
+                  Related Logistical Items
+                  <ChevronDown
+                    className={`w-4 h-4 transition ${
+                      expandRelated ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
+
+                {expandRelated && (
+                  <div className="space-y-2 ml-4 p-3 bg-gray-50 rounded-lg">
+                    {trip.flights.length > 0 && (
+                      <>
+                        <div className="font-medium text-xs text-gray-600 uppercase">
+                          Flights
+                        </div>
+                        {trip.flights.map((flight) => (
+                          <label key={flight.id} className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={formData.relatedItemIds.includes(flight.id)}
+                              onChange={() => handleRelatedToggle(flight.id)}
+                              className="w-4 h-4 rounded border-gray-300 text-blue-600"
+                            />
+                            <span className="text-xs text-gray-700">
+                              {flight.flightNumber}
+                              {flight.route ? ` (${flight.route})` : ''}
+                            </span>
+                          </label>
+                        ))}
+                      </>
+                    )}
+
+                    {trip.lodgings.length > 0 && (
+                      <>
+                        <div className="font-medium text-xs text-gray-600 uppercase mt-3">
+                          Lodging
+                        </div>
+                        {trip.lodgings.map((lodging) => (
+                          <label key={lodging.id} className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={formData.relatedItemIds.includes(lodging.id)}
+                              onChange={() => handleRelatedToggle(lodging.id)}
+                              className="w-4 h-4 rounded border-gray-300 text-blue-600"
+                            />
+                            <span className="text-xs text-gray-700">{lodging.name}</span>
+                          </label>
+                        ))}
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Buttons */}
             <div className="flex gap-3 pt-4 border-t border-gray-200">

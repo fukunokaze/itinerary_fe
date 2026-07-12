@@ -1,9 +1,9 @@
+import { notFound } from 'next/navigation';
 import { Share2, Edit, Users } from 'lucide-react';
 import { NewEventButton } from './_components/NewEventButton';
 import { ItineraryTimeline } from './_components/ItineraryTimeline';
 import { LogisticsPanel } from './_components/LogisticsPanel';
-import { getTrip } from '@/lib/api/trips';
-import { mockTrip } from '@/lib/fixtures/trip';
+import { getTrip, ApiError } from '@/lib/api/trips';
 
 interface PageProps {
   params: Promise<{
@@ -18,8 +18,10 @@ export default async function TripPage({ params }: PageProps) {
   try {
     trip = await getTrip(tripId);
   } catch (error) {
-    console.log('Using fixture data:', error);
-    trip = mockTrip;
+    if (error instanceof ApiError && error.status === 404) {
+      notFound();
+    }
+    throw error;
   }
 
   const startDate = new Date(trip.startDate);
@@ -47,9 +49,11 @@ export default async function TripPage({ params }: PageProps) {
               <div className="flex items-center gap-1">
                 <span className="text-sm">{dateRange}</span>
               </div>
-              <div className="flex items-center gap-1">
-                <span className="text-sm">📍 {trip.locations.join(' & ')}</span>
-              </div>
+              {trip.destination && (
+                <div className="flex items-center gap-1">
+                  <span className="text-sm">📍 {trip.destination}</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -63,7 +67,7 @@ export default async function TripPage({ params }: PageProps) {
               <Share2 className="w-4 h-4" />
               Share
             </button>
-            <NewEventButton tripId={tripId} />
+            <NewEventButton tripId={tripId} trip={trip} />
             <button className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 flex items-center gap-2">
               <Users className="w-4 h-4" />
               Manage Travelers
@@ -76,12 +80,17 @@ export default async function TripPage({ params }: PageProps) {
       <div className="flex-1 flex gap-6 px-8 py-6">
         {/* Left Column: Itinerary Timeline */}
         <div className="flex-1 min-w-0">
-          <ItineraryTimeline tripId={tripId} />
+          <ItineraryTimeline events={trip.events} />
         </div>
 
         {/* Right Column: Logistics Panel */}
         <aside className="w-80 flex-shrink-0">
-          <LogisticsPanel tripId={tripId} />
+          <LogisticsPanel
+            flights={trip.flights}
+            lodgings={trip.lodgings}
+            documents={trip.documents}
+            notes={trip.notes}
+          />
         </aside>
       </div>
     </div>

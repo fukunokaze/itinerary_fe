@@ -2,17 +2,19 @@
 
 import { revalidatePath } from 'next/cache';
 import { createEvent } from '@/lib/api/trips';
+import { EventType } from '@/lib/types/trip';
 
 interface CreateEventInput {
+  type: EventType;
   title: string;
   date: string;
   startTime: string;
   endTime?: string;
   location?: string;
   notes?: string;
-  confirmationNumber?: string;
-  assignedTravelers: string[];
-  relatedItems: string[];
+  bookingCode?: string;
+  travelerIds: string[];
+  relatedItemIds: string[];
 }
 
 export async function createEventAction(
@@ -20,27 +22,17 @@ export async function createEventAction(
   eventData: CreateEventInput
 ) {
   try {
-    // Combine date and time into ISO format
-    const [year, month, day] = eventData.date.split('-');
-    const [startHour, startMin] = eventData.startTime.split(':');
-    
-    const startDateTime = new Date(
-      parseInt(year),
-      parseInt(month) - 1,
-      parseInt(day),
-      parseInt(startHour),
-      parseInt(startMin)
-    );
-
     const payload = {
+      type: eventData.type,
       title: eventData.title,
-      startTime: startDateTime.toISOString(),
-      endTime: eventData.endTime ? new Date(eventData.endTime).toISOString() : undefined,
+      date: eventData.date,
+      startTime: eventData.startTime ? `${eventData.startTime}:00` : undefined,
+      endTime: eventData.endTime ? `${eventData.endTime}:00` : undefined,
       location: eventData.location,
       notes: eventData.notes,
-      confirmationNumber: eventData.confirmationNumber,
-      assignedTravelers: eventData.assignedTravelers,
-      relatedLogisticalItems: eventData.relatedItems,
+      bookingCode: eventData.bookingCode,
+      travelerIds: eventData.travelerIds,
+      relatedItemIds: eventData.relatedItemIds,
     };
 
     const result = await createEvent(tripId, payload);

@@ -1,114 +1,117 @@
-export type EventType = 
-  | 'flight' 
-  | 'hotel' 
-  | 'meal' 
-  | 'attraction' 
-  | 'activity' 
-  | 'transport' 
-  | 'other';
+// Types mirror the .NET backend's OpenAPI schema (GET /openapi/v1.json)
+
+export type EventType = 'flight' | 'lodging' | 'activity';
 
 export interface Traveler {
   id: string;
   name: string;
-  email: string;
-  avatarUrl?: string;
 }
 
 export interface Flight {
   id: string;
+  tripId: string;
   flightNumber: string;
-  airline: string;
-  departureAirport: string;
-  departureTime: string; // ISO 8601
-  arrivalAirport: string;
-  arrivalTime: string; // ISO 8601
-  seatCount: number;
-  confirmationNumber?: string;
-  imageUrl?: string;
+  departureTime: string; // ISO 8601 date-time
+  arrivalTime: string; // ISO 8601 date-time
+  airline?: string | null;
+  seat?: string | null;
+  confirmationCode?: string | null;
+  route?: string | null;
+  cost?: number | null;
 }
 
 export interface Lodging {
   id: string;
   name: string;
-  address: string;
-  checkInDate: string; // ISO 8601
-  checkOutDate: string; // ISO 8601
+  address?: string | null;
+  checkIn: string; // ISO 8601 date-time
+  checkOut: string; // ISO 8601 date-time
   nights: number;
-  confirmationNumber?: string;
-  latitude?: number;
-  longitude?: number;
-  imageUrl?: string;
+  confirmationCode?: string | null;
+  cost?: number | null;
 }
 
 export interface Document {
   id: string;
-  type: 'passport' | 'insurance' | 'visa' | 'other';
-  name: string;
-  url?: string;
-}
-
-export interface LogisticalItem {
-  id: string;
-  type: 'flight' | 'lodging' | 'activity';
-  name: string;
-  itemId: string; // References Flight.id, Lodging.id, etc.
+  title: string;
+  icon: string;
 }
 
 export interface TripEvent {
   id: string;
   tripId: string;
+  type: EventType;
   title: string;
-  description?: string;
-  eventType: EventType;
-  startTime: string; // ISO 8601
-  endTime?: string; // ISO 8601
-  location?: string;
-  latitude?: number;
-  longitude?: number;
-  imageUrl?: string;
-  notes?: string;
-  confirmationNumber?: string;
-  assignedTravelers: Traveler[];
-  relatedLogisticalItems: LogisticalItem[];
+  date: string; // ISO 8601 date (no time)
+  startTime?: string | null; // "HH:mm:ss"
+  endTime?: string | null; // "HH:mm:ss"
+  location?: string | null;
+  notes?: string | null;
+  bookingCode?: string | null;
+  imageUrl?: string | null;
+  tags?: string | null;
+  cost?: number | null;
 }
 
 export interface Trip {
   id: string;
   title: string;
-  description?: string;
-  startDate: string; // ISO 8601
-  endDate: string; // ISO 8601
-  locations: string[];
-  travelers: Traveler[];
+  startDate: string; // ISO 8601 date
+  endDate: string; // ISO 8601 date
+  destination?: string;
+  description?: string | null;
+  emoji?: string;
   events: TripEvent[];
   flights: Flight[];
-  lodging: Lodging[];
-  activities: TripEvent[];
+  lodgings: Lodging[];
   documents: Document[];
-  notes?: string;
+  travelers: Traveler[];
+  notes?: string | null;
 }
 
-export interface TripResponse {
-  id: string;
+// Request payloads (mirror Create*Dto schemas)
+
+export interface CreateTripInput {
   title: string;
-  description?: string;
   startDate: string;
   endDate: string;
-  locations: string[];
+  destination?: string;
+  description?: string;
+  emoji?: string;
 }
 
-export interface EventsResponse {
-  events: TripEvent[];
-}
+export type UpdateTripInput = CreateTripInput;
 
-export interface LogisticsResponse {
-  flights: Flight[];
-  lodging: Lodging[];
-  activities: TripEvent[];
-  documents: Document[];
+export interface CreateTripEventInput {
+  type: EventType;
+  title: string;
+  date: string;
+  startTime?: string;
+  endTime?: string;
+  location?: string;
   notes?: string;
+  bookingCode?: string;
+  travelerIds?: string[];
+  relatedItemIds?: string[];
+  cost?: number;
 }
 
-export interface TravelersResponse {
-  travelers: Traveler[];
+export interface CreateFlightInput {
+  flightNumber: string;
+  departureTime: string;
+  arrivalTime: string;
+  airline?: string;
+  seat?: string;
+  confirmationCode?: string;
+  route?: string;
+  cost?: number;
+}
+
+export interface CreateLodgingInput {
+  name: string;
+  checkIn: string;
+  checkOut: string;
+  address?: string;
+  confirmationCode?: string;
+  cost?: number;
 }

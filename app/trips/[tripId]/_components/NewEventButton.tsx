@@ -3,12 +3,14 @@
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import { AddEventModal } from './AddEventModal';
+import { Trip } from '@/lib/types/trip';
 
 interface NewEventButtonProps {
   tripId: string;
+  trip: Trip;
 }
 
-export function NewEventButton({ tripId }: NewEventButtonProps) {
+export function NewEventButton({ tripId, trip }: NewEventButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -24,6 +26,7 @@ export function NewEventButton({ tripId }: NewEventButtonProps) {
       {isOpen && (
         <AddEventModal
           tripId={tripId}
+          trip={trip}
           onClose={() => setIsOpen(false)}
         />
       )}
